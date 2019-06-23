@@ -9,33 +9,33 @@ module Ncurses
 data NcursesError = NullWindow
 
 data NcursesIO : Type -> Type where
-  ncursesIO : IO (Either NcursesError a) -> NcursesIO a
+  MkNcursesIO : IO (Either NcursesError a) -> NcursesIO a
 
 unliftIO : NcursesIO a -> IO (Either NcursesError a)
-unliftIO (ncursesIO ioe) = ioe
+unliftIO (MkNcursesIO ioe) = ioe
 
 liftIO : IO a -> NcursesIO a
-liftIO ioa = ncursesIO (map Right ioa)
+liftIO ioa = MkNcursesIO (map Right ioa)
 
 implementation Functor NcursesIO where
-  map f (ncursesIO io) = ncursesIO (map (map f) io)
+  map f (MkNcursesIO io) = MkNcursesIO (map (map f) io)
 
 implementation Applicative NcursesIO where
-  pure a = ncursesIO (pure (pure a))
-  (ncursesIO f) <$> (ncursesIO a) = ncursesIO io where
+  pure a = MkNcursesIO (pure (pure a))
+  (MkNcursesIO f) <*> (MkNcursesIO a) = MkNcursesIO io where
     io : IO (Either NcursesError b)
     io = do
       f' <- f
       a' <- a
-      return (f' <$> a')
-
+      ?hole_rhs1 --pure (f' <$> a')
+  
 implementation Monad NcursesIO where
-  (ncursesIO a) >>= k = ncursesIO io where
+  (MkNcursesIO a) >>= k = MkNcursesIO io where
     io : IO (Either NcursesError b)
     io = do
       a' <- a
       case a' of
-        Left err => return (Left err)
+        Left err => pure (Left err)
         Right a => unliftIO (k a)
 
 data Window = WindowPtr Ptr
@@ -47,7 +47,7 @@ cBool False = 0
 
 private
 liftError : IO Int -> NcursesIO ()
-liftError code = ncursesIO (map liftErr code) where
+liftError code = MkNcursesIO (map liftErr code) where
   liftErr code = if code == -1 then Left NullWindow else Right ()
 
 --
@@ -55,10 +55,10 @@ liftError code = ncursesIO (map liftErr code) where
 --
 
 lines : NcursesIO Int
-lines = liftIO $ mkForeign (FFun "getLines" [] FInt)
+lines = foreign FFI_C "getLines" (NcursesIO Int)
 
 cols : NcursesIO Int
-cols = liftIO $ mkForeign (FFun "getCols" [] FInt)
+cols = liftIO $ foreign (FFI_C "getCols" [] FInt)
 
 --
 -- Window/Screen Management
@@ -198,7 +198,7 @@ runNcurses f g nio = do
     Right a => g a
 
 ncursesMain : NcursesIO () -> IO ()
-ncursesMain = runNcurses logError return where
+ncursesMain = runNcurses logError pure where
   logError NullWindow = putStrLn "NULL window"
 
 -- lines : IO Int
