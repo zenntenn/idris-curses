@@ -4,7 +4,7 @@ module Ncurses
 %include C "Ncurses/ncurses_extra.h"
 %link C "Ncurses/ncurses_extra.o"
 
-%access public
+%access public export
 
 data NcursesError = NullWindow
 
@@ -17,10 +17,10 @@ unliftIO (ncursesIO ioe) = ioe
 liftIO : IO a -> NcursesIO a
 liftIO ioa = ncursesIO (map Right ioa)
 
-instance Functor NcursesIO where
+implementation Functor NcursesIO where
   map f (ncursesIO io) = ncursesIO (map (map f) io)
 
-instance Applicative NcursesIO where
+implementation Applicative NcursesIO where
   pure a = ncursesIO (pure (pure a))
   (ncursesIO f) <$> (ncursesIO a) = ncursesIO io where
     io : IO (Either NcursesError b)
@@ -29,7 +29,7 @@ instance Applicative NcursesIO where
       a' <- a
       return (f' <$> a')
 
-instance Monad NcursesIO where
+implementation Monad NcursesIO where
   (ncursesIO a) >>= k = ncursesIO io where
     io : IO (Either NcursesError b)
     io = do
@@ -202,4 +202,4 @@ ncursesMain = runNcurses logError return where
   logError NullWindow = putStrLn "NULL window"
 
 -- lines : IO Int
--- lines = mkForeign (FFun "LINES" [] FUnit) 
+-- lines = mkForeign (FFun "LINES" [] FUnit)
