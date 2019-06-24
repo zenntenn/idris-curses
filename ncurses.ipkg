@@ -9,3 +9,4 @@ executable = example
 makefile = Makefile
 libs = ncurses
 objs = ncurses_extra.o, ncurses_extra.h
+opts = "-p contrib"
