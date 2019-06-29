@@ -15,11 +15,14 @@ cBool : Bool -> Int
 cBool True = 1
 cBool False = 0
 
+data NcursesStatus = NotInitialized | Initialized
+
 data Window = WindowPtr Ptr
 
 -- Commenting out the ones that I don't need yet, as Idris currently gets very slow if there are too many of these functions defined
 interface Ncurses (m : Type -> Type) where
 {
+  Status : NcursesStatus -> Type
   ||| Outputs a string, without trailing newline 
   putStr : Window -> (str : String) -> STrans m () xs (const xs)
   ||| Gets the most recent line entered 
@@ -29,21 +32,21 @@ interface Ncurses (m : Type -> Type) where
   ||| Outputs a single character
   putChar : Window -> (char : Char) -> STrans m () xs (const xs)
   ||| Gets the next character, after a newline 
-  getChar : Window -> STrans m Char xs (const xs)
+  -- getChar : Window -> STrans m Char xs (const xs)
   ||| Gets a single character, without waiting for a newline 
   getCh : Window -> STrans m Char xs (const xs)
   -- lines : STrans m Int xs (const xs)
   -- cols : STrans m Int xs (const xs)
-  -- initscr : STrans m Window xs (const xs)
-  -- endwin : STrans m Int xs (const xs)
+  initscr : STrans m Window xs (const xs)
+  endwin : STrans m Int xs (const xs)
   -- refresh : Window -> STrans m Int xs (const xs)
-  -- cbreak : STrans m Int xs (const xs)
-  -- nocbreak : STrans m Int xs (const xs)
-  -- echo : STrans m Int xs (const xs)
-  -- noecho : STrans m Int xs (const xs)
+  cbreak : STrans m Int xs (const xs)
+  nocbreak : STrans m Int xs (const xs)
+  echo : STrans m Int xs (const xs)
+  noecho : STrans m Int xs (const xs)
   -- halfdelay : STrans m Int xs (const xs)
   -- intrflush : Window -> Bool -> STrans m Int xs (const xs)
-  -- keypad : Window -> Bool -> STrans m Int xs (const xs)
+  keypad : Window -> Bool -> STrans m Int xs (const xs)
   -- meta : Window -> Bool -> STrans m Int xs (const xs)
   -- nodelay : Window -> Bool -> STrans m Int xs (const xs)
   -- raw : STrans m Int xs (const xs)
@@ -80,20 +83,20 @@ Ncurses IO where
   putStrLn w str = putStr w (str ++ "\n")
   getStr (WindowPtr p) = lift $ foreign FFI_C "getStr" (Ptr -> IO String) p
   putChar (WindowPtr p) char = lift $ foreign FFI_C "putChar" (Ptr -> Char -> IO()) p char
-  getChar (WindowPtr p) = lift $ foreign FFI_C "getChar" (Ptr -> IO Char) p
+  --getChar (WindowPtr p) = lift $ foreign FFI_C "getChar" (Ptr -> IO Char) p
   getCh (WindowPtr p) = lift $ foreign FFI_C "wgetch" (Ptr -> IO Char) p
   -- lines = intReturn "getLines"
   -- cols = intReturn "getCols"
-  -- initscr = lift $ map WindowPtr $ foreign FFI_C "initscr" (IO Ptr)
-  -- endwin = intReturn "endwin"
+  initscr = lift $ map WindowPtr $ foreign FFI_C "initscr" (IO Ptr)
+  endwin = intReturn "endwin"
   -- refresh (WindowPtr p) = lift $ foreign FFI_C "wrefresh" (Ptr -> IO Int) p
-  -- cbreak = intReturn "cbreak"
-  -- nocbreak = intReturn "nocbreak"
-  -- echo = intReturn "echo"
-  -- noecho = intReturn "noecho"
+  cbreak = intReturn "cbreak"
+  nocbreak = intReturn "nocbreak"
+  echo = intReturn "echo"
+  noecho = intReturn "noecho"
   -- halfdelay = intReturn "halfdelay"
   -- intrflush w a = windowBoolIntReturn "intrflush" w a
-  -- keypad w a = windowBoolIntReturn "keypad" w a
+  keypad w a = windowBoolIntReturn "keypad" w a
   -- meta w a = windowBoolIntReturn "meta" w a
   -- nodelay w a = windowBoolIntReturn "nodelay" w a
   -- raw = intReturn "raw"
